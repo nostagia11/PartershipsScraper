@@ -1,0 +1,9 @@
+Django==5.1
+celery==5.4.0  # For background tasks
+redis==5.0.2  # For task queue management
+beautifulsoup4==4.12.2  # For HTML parsing
+selenium==4.26.1  # For LinkedIn scraping
+requests==2.32.3  # For handling HTTP requests
+lxml==5.3.0  # For parsing XML/HTML
+python-dotenv==1.0.1  # For loading environment variables
+openpyxl>=3.0.10
