@@ -25,7 +25,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 
 @shared_task
-def scrape_linkedin(ct_num, title):
+def scrape_linkedin (ct_num, title):
     # Task 1.1: Open Chrome and Access LinkedIn login site
     # options = webdriver.ChromeOptions()
     # options = webdriver.ChromeOptions()
@@ -125,7 +125,7 @@ def scrape_linkedin(ct_num, title):
             last_height = new_height
 
         src = driver.page_source
-        soup = BeautifulSoup(src, 'lxml')
+        soup = BeautifulSoup(src, 'html.parser')
         print(soup)
         uls = soup.find('ul', {'class': 'display-flex list-style-none flex-wrap'})
 
@@ -157,7 +157,7 @@ def scrape_linkedin(ct_num, title):
                     driver.get(p)
                     time.sleep(8)
                     src = driver.page_source
-                    soup = BeautifulSoup(src, 'lxml')
+                    soup = BeautifulSoup(src, 'html.parser')
                     url = p
                     name = soup.find('h1', {
                         'class': 'text-heading-xlarge inline t-24 v-align-middle break-words'}).get_text().strip()

@@ -15,12 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 from Pscraper import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('django.contrib.auth.urls')),
     path('start-scraping/', views.start_scraping, name='start_scraping'),
     # path('get_progress_data/', views.get_progress_data, name='get_progress_data'),
     path('results/', views.results, name='results'),
