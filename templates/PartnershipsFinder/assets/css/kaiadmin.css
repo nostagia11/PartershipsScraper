@@ -863,7 +863,7 @@ body {
       width: 35px;
       height: 35px; }
   .logo-header .logo {
-    color: #2A2F5B;
+    color: #2c2c2c;
     opacity: 1;
     position: relative;
     height: 100%;
@@ -909,7 +909,7 @@ body {
   line-height: 20px;
   padding: 0px !important;
   background: transparent !important;
-  color: #2A2F5B !important; }
+  color: #2c2c2c !important; }
   .btn-toggle:hover, .btn-toggle:focus {
     opacity: 1; }
 

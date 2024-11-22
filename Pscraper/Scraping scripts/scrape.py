@@ -5,6 +5,7 @@ import re
 import time
 from time import sleep
 
+from redis import Redis
 from selenium.webdriver.support import expected_conditions as EC
 
 from selenium import webdriver
@@ -17,6 +18,8 @@ import urllib
 from urllib.parse import urlparse
 
 from selenium.webdriver.support.wait import WebDriverWait
+
+from Pscraper.models import Person, Company
 
 print('- Finish importing packages')
 
@@ -31,6 +34,7 @@ print('- Finish importing packages')
 # driver = webdriver.Chrome()
 # driver = webdriver.Chrome(options=options)
 def scrape_companies(c):
+
     driver.get(c)
     time.sleep(8)
     srcc = driver.page_source
@@ -154,7 +158,7 @@ query_params = {
     "origin": origin,
     "sid": sid
 }
-
+redis_conn = Redis(host='localhost', port=6379, db=1)
 # Combine base URL with the encoded query parameters
 url = f"{base_url}?{urllib.parse.urlencode(query_params)}"
 try:
@@ -200,11 +204,11 @@ try:
             print(f"len(out): {len(pr_urls)}")
             contacts = []
             companies = []
-
+            ct_num = 0
             cp_urls = []
             new_contacts_count = 0
             new_companies_count = 0
-            for s, p in enumerate(pr_urls):
+            for c, p in enumerate(pr_urls):
                 try:
                     driver.get(p)
                     time.sleep(8)
@@ -215,11 +219,11 @@ try:
                         'class': 'text-heading-xlarge inline t-24 v-align-middle break-words'}).get_text().strip()
                     if Person.objects.filter(name=name).exists():
                         print(f"{name} already exists in the database. Skipping. len(out): {len(pr)}")
-                        remaining_urls = pr[s + 1:]
+                        remaining_urls = pr[c + 1:]
                         random.shuffle(remaining_urls)
 
                         # Replace the remaining part of the list with the shuffled URLs
-                        pr = pr[:s + 1] + remaining_urls
+                        pr = pr[:c + 1] + remaining_urls
 
                         continue
                     # title = soup.find('div', {'class': 'text-body-medium break-words'}).get_text().strip()
@@ -280,10 +284,10 @@ try:
                         company=company,
                         defaults={
                             'url': url,
-                            'email': email,
+
                             'title': title,
                             'location': location,
-                            'img_url': img_url
+
                         }
                     )
 
@@ -291,11 +295,11 @@ try:
                     progress_percent = (progress_step / ct_num) * 100
 
                     new_contacts_count += 1
-                    redis_conn.set('scraped_data', json.dumps(out))
+                    redis_conn.set('scraped_data', json.dumps(contacts))
                     redis_conn.set('scraping_progress', json.dumps(
                         {'progress': progress_percent, 'step': progress_step, 'total_steps': st_num}))
 
-                    if new_people_count >= ct_num:
+                    if new_contacts_count >= ct_num:
                         break  # Stop when we've added the required number of new people
                     print(progress_percent)
                 except Exception as e:
@@ -303,7 +307,7 @@ try:
                 print(pr_urls)
                 print(contacts)
                 print(cp_urls)
-            redis_conn.set('scraped_data', json.dumps(out))
+            redis_conn.set('scraped_data', json.dumps(contacts))
 except Exception as e:
     print(f"An error occurred during the scraping process: {e}")
     redis_conn.set('scraped_data', json.dumps([]))
