@@ -1,5 +1,6 @@
 import os
 
+from django.contrib import auth, messages
 from django.shortcuts import render
 from redis import Redis
 
@@ -39,10 +40,10 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('/index')
+            return redirect('/login')
     else:
         form = CustomUserCreationForm()
-    return render(request, 'PartnershipsFinder/register.html', {'form': form})
+    return render(request, 'PartnershipsFinder/authentication/register.html', {'form': form})
 
 
 def login_view(request):
@@ -51,42 +52,35 @@ def login_view(request):
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
+            user = authenticate(request,username=username, password=password)
             if user is not None:
                 login(request, user)
                 return redirect('/index')
             else:
-                form.add_error(None, 'Invalid email or password.')
+                messages.error(request, "Invalid username or password.")  # Use Django's messaging framework
+        else:
+            messages.error(request, "Form validation failed.")
     else:
         form = LoginForm()
-    return render(request, 'PartnershipsFinder/login.html', {'form': form})
+    return render(request, 'PartnershipsFinder/authentication/login.html', {'form': form})
 
 
-@login_required
-def logout_view(request):
-    logout(request)
-    return redirect('/login')
+@login_required(login_url="/login")
+def getdata(request):
+    all_persons_data = Person.objects.all().values('url', 'name', 'title', 'location', 'company__name'
+                                                   )
+    contacts = []
+    for contact in all_persons_data:
+        contacts.append(contact)
+
+    return contacts
 
 
-def getdata():
-    match_url = "https://media.licdn.com/dms/image/v2/D4D03AQHoHh3c5w12xA/"
-    replacement_url = "https://i.imgur.com/mUtO8vh.jpg"
-    all_persons_data = Person.objects.all().values('url', 'name', 'title', 'location', 'company__name',
-                                                   'img_url')
-    processed_data = []
-    for person in all_persons_data:
-        if person['img_url'].startswith(match_url):
-            person['img_url'] = replacement_url
-        processed_data.append(person)
-
-    return processed_data
-
-
-@login_required
+@login_required(login_url="/login")
 def results(request):
     order = request.GET.get('order', 'asc')
     search_query = request.GET.get('q', '')
-    data = getdata()
+    data = getdata(request)
 
     if search_query:
         data = [d for d in data if search_query.lower() in d['name'].lower()]
@@ -102,8 +96,10 @@ def results(request):
     return render(request, 'PartnershipsFinder/scrapedData.html', {'data': data, 'order': order})
 
 
-@login_required
+@login_required(login_url="/login")
 def resultsbycompany(request):
+    #match_url = "https://media.licdn.com/dms/image/v2/D4D03AQHoHh3c5w12xA/"
+    #replacement_url = "https://i.imgur.com/mUtO8vh.jpg"
     order = request.GET.get('order', 'asc')
     search_query = request.GET.get('q', '')
 
@@ -132,6 +128,7 @@ def resultsbycompany(request):
     return render(request, 'PartnershipsFinder/ScrapedDatacOMPANIES.html', {'companies': companies, 'order': order})
 
 
+@login_required(login_url="/login")
 def get_company_members(request):
     company_id = request.GET.get('company_id')
     if company_id:
@@ -140,7 +137,7 @@ def get_company_members(request):
     return JsonResponse({'members': []})
 
 
-@login_required
+@login_required(login_url="/login")
 def delete_company(request):
     if request.method == 'POST':
         company_id = request.POST.get('company_id')
@@ -155,24 +152,9 @@ def delete_company(request):
     return JsonResponse({'success': False, 'message': 'Invalid request method.'})
 
 
-@login_required
-def delete_session(request):
-    label_to_delete = request.POST.get('label')
-
-    tree = ET.parse('scraping_history.xml')
-    root = tree.getroot()
-
-    for job in root.findall('job'):
-        label = job.find('label').text
-        if label == label_to_delete:
-            root.remove(job)
-            tree.write('scraping_history.xml')
-            break
-
-    return redirect(reverse('history'))
 
 
-@login_required
+@login_required(login_url="/login")
 def history(request):
     tree = ET.parse('scraping_history.xml')
     root = tree.getroot()
@@ -193,53 +175,65 @@ def history(request):
             'start_time': start_time,
             'end_time': end_time,
         })
-    return render(request, 'PartnershipsFinder/JobHistory.html', {'sessions': jobs})
+    return render(request, 'PartnershipsFinder/JobHistory.html', {'jobs': jobs})
 
 
-@login_required
+@login_required(login_url="/login")
 def index(request):
-    today = datetime.now()
-    formatted_date = today.strftime("%a, %d %b %Y")
-    config = configparser.ConfigParser()
-    config.read('web.config')
-    average_salary = Decimal(config.get('Settings', 'average_salary', fallback='0'))
-    currency = config.get('Settings', 'currency', fallback='USD')
+    #today = datetime.now()
+    #formatted_date = today.strftime("%a, %d %b %Y")
+    #config = configparser.ConfigParser()
+    #config.read('web.config')
+    #average_salary = Decimal(config.get('Settings', 'average_salary', fallback='0'))
+    #currency = config.get('Settings', 'currency', fallback='USD')
 
-    excluded_employees = Person.objects.filter(
-        company__name__in=['ESPRIT', 'Ecole Supérieure Privée d\'Ingénierie et de Technologies - ESPRIT']
+    uni_companies = Company.objects.filter(
+        industry__in=['Higher Education']
     ).count()
 
-    total_employees = Person.objects.count()
-    included_employees = total_employees - excluded_employees
+    total_companies = Company.objects.count()
+    industry_companies = total_companies - uni_companies
 
-    total_salary = included_employees * average_salary
+    """total_salary = companies_contacts * average_salary
 
     if total_salary >= Decimal(1_000_000):
         total_salary_display = f"{total_salary / Decimal(1_000_000):.1f}M"
     else:
-        total_salary_display = f"{total_salary:,.0f}".replace(",", " ")
+        total_salary_display = f"{total_salary:,.0f}".replace(",", " ")"""
 
-    company_employee_counts = Company.objects.annotate(employee_count=Count('person')).exclude(
-        name__in=['ESPRIT', 'Ecole Supérieure Privée d\'Ingénierie et de Technologies - ESPRIT']
-    )
+    """uni_contacts_counts = Company.objects.annotate(employee_count=Count('person')).exclude(
+        industry__in=['IT Services and IT Consulting', 'Software Development']
+    )"""
+    """total_contacts = Person.objects.count()
+    industry_contacts_counts = total_contacts - uni_contacts_counts"""
 
-    chart_data = {
-        'labels': [company.name for company in company_employee_counts],
-        'data': [company.employee_count for company in company_employee_counts],
-    }
+    # Group by industry and count the related Person objects (contacts)
+    chart_data = Company.objects.annotate(contact_count=Count('person')).values('industry', 'contact_count')
+
+    # Extract data into lists for the chart
+    industries = [entry['industry'] for entry in chart_data]
+    contact_counts = [entry['contact_count'] for entry in chart_data]
 
     return render(request, 'PartnershipsFinder/index.html', {
-        'num_students': total_employees,
+        'industries': industries,
+        'contact_counts': contact_counts,
+        'uni_companies': uni_companies,
+        'industry_companies': industry_companies
+
+    })
+
+    """return render(request, 'PartnershipsFinder/index.html', {
+        'num_students': total_contacts,
         'num_companies': Company.objects.count(),
-        'excluded_employees': excluded_employees,
+        'companies_contacts': companies_contacts,
         'chart_data': json.dumps(chart_data),
         'total_salary': total_salary_display,
         'currency': currency,
         'date': formatted_date,
-    })
+    })"""
 
 
-@login_required
+@login_required(login_url="/login")
 def start_scraping(request):
     if request.method == 'POST':
         try:
@@ -279,39 +273,8 @@ def start_scraping(request):
         return redirect('results')
 
 
-@login_required
-def resultsbycompany(request):
-    order = request.GET.get('order', 'asc')
-    search_query = request.GET.get('q', '')
-
-    companies = Company.objects.prefetch_related(
-        Prefetch('person_set', queryset=Person.objects.all())
-    )
-
-    if search_query:
-        companies = companies.filter(name__icontains=search_query)
-
-    if order == 'asc':
-        companies = companies.order_by('name')
-    elif order == 'desc':
-        companies = companies.order_by('-name')
-
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        company_data = [
-            {
-                'name': company.name,
-                'persons': [{'name': person.name, 'email': person.email} for person in company.person_set.all()]
-            }
-            for company in companies
-        ]
-        return JsonResponse({'companies': company_data})
-
-    return render(request, 'PartnershipsFinder/ScrapedDatacOMPANIES.html', {'companies': companies, 'order': order})
-
-
-@login_required
+@login_required(login_url="/login")
 def export(request):
-
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Contacts"
@@ -331,14 +294,32 @@ def export(request):
             contact.company.name if contact.company else 'N/A'
         ])
 
+        # Sheet 2: Exporting "Company" data
+    ws_companies = wb.create_sheet(title="Companies")
+    headers_companies = ['Name', 'Industry', 'Phone', 'Location', 'Image URL', 'Website URL', 'URL']
+    ws_companies.append(headers_companies)
+
+    companies = Company.objects.all()
+    for company in companies:
+        ws_companies.append([
+            company.name,
+            company.industry,
+            company.phone,
+            company.location,
+            company.img_url,
+            company.website_url,
+            company.url,
+            #company.company.name if company.company else 'N/A'
+        ])
+
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=contacts.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=ScrapedCompaniesContacts.xlsx'
     wb.save(response)
 
     return response
 
 
-@login_required
+@login_required(login_url="/login")
 def delete_session(request):
     label_to_delete = request.POST.get('label')
 
@@ -352,5 +333,5 @@ def delete_session(request):
             tree.write('scraping_history.xml')
             break
 
-    return redirect(reverse('history'))
+    return redirect('history')
 # Create your views here.

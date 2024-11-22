@@ -84,7 +84,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255)),
                 ('location', models.CharField(max_length=255)),
                 ('img_url', models.URLField(max_length=2048)),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='Pscraper.company')),
+                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='PartnershipsFinder.company')),
             ],
             options={
                 'unique_together': {('name', 'company')},

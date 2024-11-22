@@ -19,7 +19,7 @@ class Company(models.Model):
     industry = models.CharField(max_length=255)
     phone = models.CharField(max_length=255, unique=True)
     location = models.CharField(max_length=255)
-    img_url = models.URLField(max_length=2048)
+    img_url = models.URLField(max_length=2048, default='N/A')
     website_url = models.URLField(max_length=2048, default='invalid websiteurl')
     url = models.URLField(max_length=2048, default='invalid url')
 
@@ -29,12 +29,12 @@ class Company(models.Model):
 
 class Person(models.Model):
     url = models.URLField(max_length=2048, default='invalid url')
-    email = models.EmailField(max_length=255, null=True, blank=True, default='SMTP E515 : Email Not Found')
+    email = models.EmailField(max_length=255, null=True, blank=True, default='Email Not Found')
     name = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    img_url = models.URLField(max_length=2048)
+
 
     class Meta:
         unique_together = ('name', 'company')

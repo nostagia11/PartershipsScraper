@@ -1,0 +1,19 @@
+<scraping_history>
+    <job>
+        <label>testscraping</label>
+        <ct_num>3</ct_num>
+        <title>HR manager</title>
+        <industry>Software Development</industry>
+        <start_time>2024-09-13 20:42:56</start_time>
+        <end_time>2024-09-13 20:44:31</end_time>
+    </job>
+    <job>
+        <label>testscraping1</label>
+        <ct_num>4</ct_num>
+        <title>Director of External Relations</title>
+        <industry>Higher Education</industry>
+        <start_time>2024-09-18 10:40:31</start_time>
+        <end_time>2024-09-18 10:44:16</end_time>
+    </job>
+
+</scraping_history>
