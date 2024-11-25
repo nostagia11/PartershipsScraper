@@ -3,7 +3,7 @@ from django.urls import path, include
 from Pscraper import views
 
 urlpatterns = [
-    path('', views.results, name='index'),
+    path('', views.results, name='login'),
     path('start-scraping/', views.start_scraping, name='start_scraping'),
 
     # path('get_progress_data/', views.get_progress_data, name='get_progress_data'),

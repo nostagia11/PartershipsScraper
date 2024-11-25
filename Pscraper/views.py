@@ -1,36 +1,23 @@
-import os
-
-from django.contrib import auth, messages
-from django.shortcuts import render
-from redis import Redis
+from django.contrib import messages
 
 # Create your views here.
-from .ScrapingTask import scrape_linkedin
-import json
 from django.db.models import Prefetch
 from django.shortcuts import render
 from django.db.models import Count
-import configparser
-from django.db.models import Count, Sum, F, ExpressionWrapper
-from decimal import Decimal
 import datetime
 import xml.etree.ElementTree as ET
 from django.shortcuts import redirect
-from django.urls import reverse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import authenticate
 from .Forms import CustomUserCreationForm
-from django.contrib.auth import logout
 from django.contrib.auth import login
 from .Forms import LoginForm
 from django.contrib.auth.decorators import login_required
 import openpyxl
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 
+from Scraping_scripts.Uniscrape import scrape_uni
 from .models import Person, Company
 
 
@@ -52,7 +39,7 @@ def login_view(request):
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            user = authenticate(request,username=username, password=password)
+            user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
                 return redirect('/index')
@@ -98,8 +85,8 @@ def results(request):
 
 @login_required(login_url="/login")
 def resultsbycompany(request):
-    #match_url = "https://media.licdn.com/dms/image/v2/D4D03AQHoHh3c5w12xA/"
-    #replacement_url = "https://i.imgur.com/mUtO8vh.jpg"
+    # match_url = "https://media.licdn.com/dms/image/v2/D4D03AQHoHh3c5w12xA/"
+    # replacement_url = "https://i.imgur.com/mUtO8vh.jpg"
     order = request.GET.get('order', 'asc')
     search_query = request.GET.get('q', '')
 
@@ -152,8 +139,6 @@ def delete_company(request):
     return JsonResponse({'success': False, 'message': 'Invalid request method.'})
 
 
-
-
 @login_required(login_url="/login")
 def history(request):
     tree = ET.parse('scraping_history.xml')
@@ -180,19 +165,12 @@ def history(request):
 
 @login_required(login_url="/login")
 def index(request):
-    #today = datetime.now()
-    #formatted_date = today.strftime("%a, %d %b %Y")
-    #config = configparser.ConfigParser()
-    #config.read('web.config')
-    #average_salary = Decimal(config.get('Settings', 'average_salary', fallback='0'))
-    #currency = config.get('Settings', 'currency', fallback='USD')
-
-    uni_companies = Company.objects.filter(
-        industry__in=['Higher Education']
-    ).count()
-
-    total_companies = Company.objects.count()
-    industry_companies = total_companies - uni_companies
+    # today = datetime.now()
+    # formatted_date = today.strftime("%a, %d %b %Y")
+    # config = configparser.ConfigParser()
+    # config.read('web.config')
+    # average_salary = Decimal(config.get('Settings', 'average_salary', fallback='0'))
+    # currency = config.get('Settings', 'currency', fallback='USD')
 
     """total_salary = companies_contacts * average_salary
 
@@ -207,6 +185,22 @@ def index(request):
     """total_contacts = Person.objects.count()
     industry_contacts_counts = total_contacts - uni_contacts_counts"""
 
+    uni_companies = Company.objects.filter(
+        industry__in=['Higher Education']
+    ).count()
+
+    total_companies = Company.objects.count()
+    industry_companies = total_companies - uni_companies
+
+    return render(request, 'PartnershipsFinder/index.html', {
+
+        'uni_companies': uni_companies,
+        'industry_companies': industry_companies
+
+    })
+
+
+def stats():
     # Group by industry and count the related Person objects (contacts)
     chart_data = Company.objects.annotate(contact_count=Count('person')).values('industry', 'contact_count')
 
@@ -214,41 +208,36 @@ def index(request):
     industries = [entry['industry'] for entry in chart_data]
     contact_counts = [entry['contact_count'] for entry in chart_data]
 
-    return render(request, 'PartnershipsFinder/index.html', {
-        'industries': industries,
-        'contact_counts': contact_counts,
-        'uni_companies': uni_companies,
-        'industry_companies': industry_companies
+    return JsonResponse({'data': chart_data}, safe=False)
 
-    })
 
-    """return render(request, 'PartnershipsFinder/index.html', {
-        'num_students': total_contacts,
-        'num_companies': Company.objects.count(),
-        'companies_contacts': companies_contacts,
-        'chart_data': json.dumps(chart_data),
-        'total_salary': total_salary_display,
-        'currency': currency,
-        'date': formatted_date,
-    })"""
+"""return render(request, 'PartnershipsFinder/index.html', {
+    'num_students': total_contacts,
+    'num_companies': Company.objects.count(),
+    'companies_contacts': companies_contacts,
+    'chart_data': json.dumps(chart_data),
+    'total_salary': total_salary_display,
+    'currency': currency,
+    'date': formatted_date,
+})"""
 
 
 @login_required(login_url="/login")
 def start_scraping(request):
     if request.method == 'POST':
         try:
-            ct_num = int(request.POST.get('ct_num'))
-            title = str(request.POST.get('title'))
+            #ct_num = int(request.POST.get('ct_num'))
+            industry = str(request.POST.get('industry'))
             label = request.POST.get('label')
 
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            redis_conn = Redis(host='192.168.0.18', port=6379, db=1)
-            redis_conn.set('scraping_progress', json.dumps({'progress': 0, 'step': 0, 'total_steps': ct_num}))
-            redis_conn.set('scraped_data', json.dumps([]))
+            #redis_conn = Redis(host='192.168.0.18', port=6379, db=1)
+            #redis_conn.set('scraping_progress', json.dumps({'progress': 0, 'step': 0, 'total_steps': ct_num}))
+            #redis_conn.set('scraped_data', json.dumps([]))
 
-            xml_file = 'scraping_history.xml'
-            if not os.path.exists(xml_file):
+            #xml_file = 'scraping_history.xml'
+            """if not os.path.exists(xml_file):
                 root = ET.Element("scraping_history")
             else:
                 tree = ET.parse(xml_file)
@@ -262,10 +251,10 @@ def start_scraping(request):
             ET.SubElement(job, "end_time").text = ""
 
             tree = ET.ElementTree(root)
-            tree.write(xml_file)
+            tree.write(xml_file)"""
 
-            scrape_linkedin.delay(ct_num, title)
-            return render(request, 'PartnershipsFinder/progress.html')
+            scrape_uni()
+            return render(request, 'PartnershipsFinder/scrapedData.html')
 
         except ValueError:
             return HttpResponseBadRequest("Invalid input. Please provide valid numbers.")
@@ -309,7 +298,7 @@ def export(request):
             company.img_url,
             company.website_url,
             company.url,
-            #company.company.name if company.company else 'N/A'
+            # company.company.name if company.company else 'N/A'
         ])
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

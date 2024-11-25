@@ -520,8 +520,8 @@
      
      // Chart with HTML Legends
        // Pass dynamic data from Django to JavaScript
-    const contact_counts = JSON.parse('{{ contact_counts|safe }}');
-    const industries = JSON.parse('{{ industries|safe }}');
+    const contact_counts = JSON.parse('{{ contact_counts|safe}}');
+    const industries = JSON.parse('{{ industries | safe }}');
       var gradientStroke = statisticsChart.createLinearGradient(
         500,
         0,
@@ -561,233 +561,106 @@
       gradientFill3.addColorStop(0, "rgba(253, 175, 75, 0.7)");
       gradientFill3.addColorStop(1, "rgba(255, 196, 120, 0.3)");
 
-      var myHtmlLegendsChart = new Chart(statisticsChart, {
-        type: "line",
-        data: {
-          labels: industries,
-          datasets: [
-            {
-              label: 'Number of Contacts',
-              borderColor: gradientStroke2,
-              pointBackgroundColor: gradientStroke2,
-              pointRadius: 0,
-              backgroundColor: gradientFill2,
-              legendColor: "#f3545d",
-              fill: true,
-              borderWidth: 1,
-              data:contact_counts,
-            },
-            
-          ],
-        },
-        options: {
+     const MyStats = new Chart(statisticsChart, {
+        type: "line", 
+         data: {
+         labels: industries,
+         datasets: [
+             {
+                 label: 'Number of Contacts',
+                 borderColor: gradientStroke2,
+                 pointBackgroundColor: gradientStroke2,
+                 pointRadius: 0,
+                 backgroundColor: gradientFill2,
+                 legendColor: "#f3545d",
+                 fill: true,
+                 borderWidth: 1,
+                 data: contact_counts,
+             },
+
+         ],
+     },
+       options: {
           responsive: true,
           maintainAspectRatio: false,
           legend: {
-            display: false,
+              display: false,
           },
           tooltips: {
-            bodySpacing: 4,
-            mode: "nearest",
-            intersect: 0,
-            position: "nearest",
-            xPadding: 10,
-            yPadding: 10,
-            caretPadding: 10,
-          },
+              bodySpacing: 4,
+              mode: "nearest",
+              intersect: 0,
+              position: "nearest",
+              xPadding: 10,
+              yPadding: 10,
+              caretPadding: 10,
+         },
           layout: {
-            padding: { left: 15, right: 15, top: 15, bottom: 15 },
-          },
-          scales: {
-            yAxes: [
-              {
-                ticks: {
-                  fontColor: "rgba(0,0,0,0.5)",
-                  fontStyle: "500",
-                  beginAtZero: false,
-                  maxTicksLimit: 5,
-                  padding: 20,
-                },
-                gridLines: {
-                  drawTicks: false,
-                  display: false,
-                },
-              },
-            ],
-            xAxes: [
-              {
-                gridLines: {
-                  zeroLineColor: "transparent",
-                },
-                ticks: {
-                  padding: 20,
-                  fontColor: "rgba(0,0,0,0.5)",
-                  fontStyle: "500",
-                },
-              },
-            ],
-          },
-          legendCallback: function (chart) {
-            var text = [];
-            text.push('<ul class="' + chart.id + '-legend html-legend">');
-            for (var i = 0; i < chart.data.datasets.length; i++) {
-              text.push(
-                '<li><span style="background-color:' +
-                  chart.data.datasets[i].legendColor +
-                  '"></span>'
-              );
-              if (chart.data.datasets[i].label) {
-                text.push(chart.data.datasets[i].label);
-              }
-              text.push("</li>");
-            }
-            text.push("</ul>");
-            return text.join("");
-          },
-        },
-      });
+              padding: {left: 15, right: 15, top: 15, bottom: 15},
+         },
+           scales: {
+             yAxes: [
+                 {
+                     ticks: {
+                         fontColor: "rgba(0,0,0,0.5)",
+                         fontStyle: "500",
+                         beginAtZero: false,
+                         maxTicksLimit: 5,
+                         padding: 20,
+                     },
+                     gridLines: {
+                         drawTicks: false,
+                         display: false,
+                     },
+                 },
+             ],
+             xAxes: [
+                 {
+                     gridLines: {
+                         zeroLineColor: "transparent",
+                     },
+                     ticks: {
+                         padding: 20,
+                         fontColor: "rgba(0,0,0,0.5)",
+                         fontStyle: "500",
+                     },
+                 },
+             ],
+         },
+         legendCallback: function (MyStats) {
+             var text = [];
+             text.push('<ul class="' + chart.id + '-legend html-legend">');
+             for (var i = 0; i < chart.data.datasets.length; i++) {
+                 text.push(
+                     '<li><span style="background-color:' +
+                     chart.data.datasets[i].legendColor +
+                     '"></span>'
+                 );
+                 if (chart.data.datasets[i].label) {
+                     text.push(chart.data.datasets[i].label);
+                 }
+                 text.push("</li>");
+             }
+             text.push("</ul>");
+             return text.join("");
+         },
+     },
+ });
 
-      var myLegendContainer = document.getElementById("myChartLegend");
+ const myLegendContainer = document.getElementById("myChartLegend");
 
-      // generate HTML legend
-      myLegendContainer.innerHTML = myHtmlLegendsChart.generateLegend();
+ // generate HTML legend
+      myLegendContainer.innerHTML = MyStats.generateLegend();
 
       // bind onClick event to all LI-tags of the legend
-      var legendItems = myLegendContainer.getElementsByTagName("li");
-      for (var i = 0; i < legendItems.length; i += 1) {
+ const legendItems = myLegendContainer.getElementsByTagName("li");
+ for (let i = 0; i < legendItems.length; i += 1) {
         legendItems[i].addEventListener("click", legendClickCallback, false);
       } 
  </script>
  
  
- <script> 
- // Assuming chartData and industries are passed correctly from Django
 
-const contact_counts = JSON.parse('{{ contact_counts|safe }}');
-const industries = JSON.parse('{{ industries|safe }}');
-
-var ctx = document.getElementById("statisticsChart").getContext("2d");
-
-var gradientStroke = ctx.createLinearGradient(500, 0, 100, 0);
-gradientStroke.addColorStop(0, "#177dff");
-gradientStroke.addColorStop(1, "#80b6f4");
-
-var gradientFill = ctx.createLinearGradient(500, 0, 100, 0);
-gradientFill.addColorStop(0, "rgba(23, 125, 255, 0.7)");
-gradientFill.addColorStop(1, "rgba(128, 182, 244, 0.3)");
-
-var gradientStroke2 = ctx.createLinearGradient(500, 0, 100, 0);
-gradientStroke2.addColorStop(0, "#f3545d");
-gradientStroke2.addColorStop(1, "#ff8990");
-
-var gradientFill2 = ctx.createLinearGradient(500, 0, 100, 0);
-gradientFill2.addColorStop(0, "rgba(243, 84, 93, 0.7)");
-gradientFill2.addColorStop(1, "rgba(255, 137, 144, 0.3)");
-
-var gradientStroke3 = ctx.createLinearGradient(500, 0, 100, 0);
-gradientStroke3.addColorStop(0, "#fdaf4b");
-gradientStroke3.addColorStop(1, "#ffc478");
-
-var gradientFill3 = ctx.createLinearGradient(500, 0, 100, 0);
-gradientFill3.addColorStop(0, "rgba(253, 175, 75, 0.7)");
-gradientFill3.addColorStop(1, "rgba(255, 196, 120, 0.3)");
-
-var myHtmlLegendsChart = new Chart(ctx, {
-  type: "line",
-  data: {
-    labels: industries,
-    datasets: [
-      {
-        label: "Number of Contacts",
-        borderColor: gradientStroke2,
-        pointBackgroundColor: gradientStroke2,
-        pointRadius: 0,
-        backgroundColor: gradientFill2,
-        legendColor: "#f3545d",
-        fill: true,
-        borderWidth: 1,
-        data: contact_counts,
-      },
-    ],
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    legend: {
-      display: false,
-    },
-    tooltips: {
-      bodySpacing: 4,
-      mode: "nearest",
-      intersect: 0,
-      position: "nearest",
-      xPadding: 10,
-      yPadding: 10,
-      caretPadding: 10,
-    },
-    layout: {
-      padding: { left: 15, right: 15, top: 15, bottom: 15 },
-    },
-    scales: {
-      yAxes: [
-        {
-          ticks: {
-            fontColor: "rgba(0,0,0,0.5)",
-            fontStyle: "500",
-            beginAtZero: false,
-            maxTicksLimit: 5,
-            padding: 20,
-          },
-          gridLines: {
-            drawTicks: false,
-            display: false,
-          },
-        },
-      ],
-      xAxes: [
-        {
-          gridLines: {
-            zeroLineColor: "transparent",
-          },
-          ticks: {
-            padding: 20,
-            fontColor: "rgba(0,0,0,0.5)",
-            fontStyle: "500",
-          },
-        },
-      ],
-    },
-    legendCallback: function (chart) {
-      var text = [];
-      text.push('<ul class="' + chart.id + '-legend html-legend">');
-      for (var i = 0; i < chart.data.datasets.length; i++) {
-        text.push(
-          '<li><span style="background-color:' +
-            chart.data.datasets[i].legendColor +
-            '"></span>'
-        );
-        if (chart.data.datasets[i].label) {
-          text.push(chart.data.datasets[i].label);
-        }
-        text.push("</li>");
-      }
-      text.push("</ul>");
-      return text.join("");
-    },
-  },
-});
-
-// Set the legend HTML
-var myLegendContainer = document.getElementById("myChartLegend");
-myLegendContainer.innerHTML = myHtmlLegendsChart.generateLegend();
-
-// Bind onClick event to the legend items
-var legendItems = myLegendContainer.getElementsByTagName("li");
-for (var i = 0; i < legendItems.length; i++) {
-  legendItems[i].addEventListener("click", legendClickCallback, false);
-}
-
-</script>
 
 
  </div>  
