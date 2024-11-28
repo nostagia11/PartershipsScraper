@@ -16,7 +16,7 @@
     />
 
     <!-- Fonts and icons -->
-    <script src="{% static '/js/plugin/webfont/webfont.min.js' %}"></script>
+    <script src="{% static 'js/plugin/webfont/webfont.min.js' %}"></script>
     <script>
       WebFont.load({
         google: { families: ["Public Sans:300,400,500,600,700"] },
@@ -516,10 +516,11 @@
     <script src="{% static 'js/kaiadmin.min.js' %}"></script>
 
             
- <script> 
+ <script>
+     {% block jquery %}
      
      // Chart with HTML Legends
-       // Pass dynamic data from Django to JavaScript
+         // Pass dynamic data from Django to JavaScript
     const contact_counts = JSON.parse('{{ contact_counts|safe}}');
     const industries = JSON.parse('{{ industries | safe }}');
       var gradientStroke = statisticsChart.createLinearGradient(
@@ -562,7 +563,7 @@
       gradientFill3.addColorStop(1, "rgba(255, 196, 120, 0.3)");
 
      const MyStats = new Chart(statisticsChart, {
-        type: "line", 
+         type: "line", 
          data: {
          labels: industries,
          datasets: [
@@ -657,8 +658,9 @@
  for (let i = 0; i < legendItems.length; i += 1) {
         legendItems[i].addEventListener("click", legendClickCallback, false);
       } 
+ {% endblock %}
  </script>
- 
+
  
 
 

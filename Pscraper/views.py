@@ -8,7 +8,7 @@ import datetime
 import xml.etree.ElementTree as ET
 from django.shortcuts import redirect
 from datetime import datetime
-
+from django.http import HttpResponseBadRequest
 from django.contrib.auth import authenticate
 from .Forms import CustomUserCreationForm
 from django.contrib.auth import login
@@ -17,7 +17,7 @@ from django.contrib.auth.decorators import login_required
 import openpyxl
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 
-from Scraping_scripts.Uniscrape import scrape_uni
+from .Uniscrape import scrape_uni
 from .models import Person, Company
 
 
@@ -312,15 +312,41 @@ def export(request):
 def delete_session(request):
     label_to_delete = request.POST.get('label')
 
-    tree = ET.parse('scraping_history.xml')
-    root = tree.getroot()
+    # Validate input
+    if not label_to_delete:
+        return HttpResponseBadRequest("Invalid label provided.")
 
-    for job in root.findall('job'):
-        label = job.find('label').text
-        if label == label_to_delete:
-            root.remove(job)
-            tree.write('scraping_history.xml')
-            break
+    try:
+        # Parse the XML file
+        tree = ET.parse('scraping_history.xml')
+        root = tree.getroot()
 
+        # Find and remove the matching job
+        job_found = False
+        for job in root.findall('job'):
+            label = job.find('label').text
+            if label == label_to_delete:
+                root.remove(job)
+                job_found = True
+                break
+
+        if not job_found:
+            return HttpResponseBadRequest("Label not found.")
+
+        # Write back to the file
+        tree.write('scraping_history.xml')
+    except FileNotFoundError:
+        return HttpResponseBadRequest("XML file not found.")
+    except ET.ParseError:
+        return HttpResponseBadRequest("Error parsing XML file.")
+    except Exception as e:
+        return HttpResponseBadRequest(f"An unexpected error occurred: {e}")
+
+    # Redirect to history page
     return redirect('history')
 # Create your views here.
+
+
+
+
+
